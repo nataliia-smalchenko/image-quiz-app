@@ -9,6 +9,7 @@
 backend/__pycache__/
 backend/*.py[cod]
 backend/*$py.class
+*.pyc
 backend/.venv/
 backend/venv/
 backend/env/
