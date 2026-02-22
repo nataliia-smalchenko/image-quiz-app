@@ -42,6 +42,7 @@ async def login(data: LoginSchema, db: AsyncSession = Depends(get_db)):
 async def google_auth(data: GoogleAuthSchema, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
+
     if not user:
         user = User(
             id=str(uuid.uuid4()),
@@ -51,4 +52,7 @@ async def google_auth(data: GoogleAuthSchema, db: AsyncSession = Depends(get_db)
         )
         db.add(user)
         await db.commit()
-    return {"id": user.id, "email": user.email, "name": user.name}
+
+    token = create_access_token({"sub": user.id, "email": user.email})
+
+    return {"id": user.id, "email": user.email, "name": user.name, "token": token}
