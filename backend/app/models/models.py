@@ -4,6 +4,7 @@ from sqlalchemy import (
     Integer,
     Float,
     Boolean,
+    Text,
     DateTime,
     ForeignKey,
 )
@@ -28,11 +29,14 @@ class Test(Base):
     __tablename__ = "tests"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     title = Column(String, nullable=False)
+    description = Column(Text, nullable=True)  # додати це поле
     slug = Column(String, unique=True, nullable=False)
     owner_id = Column(String, ForeignKey("users.id"))
     created_at = Column(DateTime, server_default=func.now())
     owner = relationship("User", back_populates="tests")
-    questions = relationship("Question", back_populates="test")
+    questions = relationship(
+        "Question", back_populates="test", order_by="Question.order"
+    )
 
 
 class Question(Base):
@@ -41,9 +45,12 @@ class Question(Base):
     test_id = Column(String, ForeignKey("tests.id"))
     text = Column(String, nullable=False)
     image_url = Column(String, nullable=False)
+    image_public_id = Column(String, nullable=True)  # додати це поле
     order = Column(Integer, default=0)
     test = relationship("Test", back_populates="questions")
-    answer_zones = relationship("AnswerZone", back_populates="question")
+    answer_zones = relationship(
+        "AnswerZone", back_populates="question", cascade="all, delete-orphan"
+    )
 
 
 class AnswerZone(Base):
