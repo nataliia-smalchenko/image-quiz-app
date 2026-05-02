@@ -29,14 +29,16 @@ class Test(Base):
     __tablename__ = "tests"
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     title = Column(String, nullable=False)
-    description = Column(Text, nullable=True)  # додати це поле
+    description = Column(Text, nullable=True)
     slug = Column(String, unique=True, nullable=False)
+    is_active = Column(Boolean, default=True)  # додати це поле
     owner_id = Column(String, ForeignKey("users.id"))
     created_at = Column(DateTime, server_default=func.now())
     owner = relationship("User", back_populates="tests")
     questions = relationship(
         "Question", back_populates="test", order_by="Question.order"
     )
+    attempts = relationship("Attempt", back_populates="test")
 
 
 class Question(Base):
@@ -71,6 +73,7 @@ class Attempt(Base):
     student_name = Column(String, nullable=False)
     started_at = Column(DateTime, server_default=func.now())
     finished_at = Column(DateTime, nullable=True)
+    test = relationship("Test", back_populates="attempts")
     answers = relationship("StudentAnswer", back_populates="attempt")
 
 
@@ -84,3 +87,4 @@ class StudentAnswer(Base):
     is_correct = Column(Boolean)
     tries_count = Column(Integer, default=1)
     attempt = relationship("Attempt", back_populates="answers")
+    question = relationship("Question")

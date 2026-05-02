@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 from app.db.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.models import User, Test, Question, AnswerZone
-from app.schemas.test import TestCreateSchema, TestUpdateSchema
+from app.schemas.test import TestCreateSchema
 import uuid
 import secrets
 
@@ -103,3 +103,72 @@ async def delete_test(
     await db.delete(test)
     await db.commit()
     return {"message": "Тест видалено"}
+
+
+@router.post("/{test_id}/regenerate-slug")
+async def regenerate_slug(
+    test_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Test).where(Test.id == test_id, Test.owner_id == current_user.id)
+    )
+    test = result.scalar_one_or_none()
+    if not test:
+        raise HTTPException(status_code=404, detail="Тест не знайдено")
+
+    test.slug = generate_slug()
+    await db.commit()
+    return {"slug": test.slug}
+
+
+@router.patch("/{test_id}/toggle-active")
+async def toggle_active(
+    test_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Test).where(Test.id == test_id, Test.owner_id == current_user.id)
+    )
+    test = result.scalar_one_or_none()
+    if not test:
+        raise HTTPException(status_code=404, detail="Тест не знайдено")
+
+    test.is_active = not test.is_active
+    await db.commit()
+    return {"is_active": test.is_active}
+
+
+# публічний endpoint для учня — без авторизації
+@router.get("/public/{slug}")
+async def get_test_by_slug(
+    slug: str,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Test)
+        .options(selectinload(Test.questions).selectinload(Question.answer_zones))
+        .where(Test.slug == slug, Test.is_active)
+    )
+    test = result.scalar_one_or_none()
+    if not test:
+        raise HTTPException(status_code=404, detail="Тест не знайдено або неактивний")
+
+    # повертаємо БЕЗ координат зон — учень не повинен їх бачити
+    return {
+        "id": test.id,
+        "title": test.title,
+        "description": test.description,
+        "questions": [
+            {
+                "id": q.id,
+                "text": q.text,
+                "image_url": q.image_url,
+                "order": q.order,
+                # answer_zones навмисно не повертаємо
+            }
+            for q in sorted(test.questions, key=lambda q: q.order)
+        ],
+    }

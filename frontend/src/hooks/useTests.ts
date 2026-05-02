@@ -53,5 +53,25 @@ export function useTests() {
     return await apiFetch(`/tests/${id}`, { method: "DELETE" });
   };
 
-  return { saveTest, fetchTests, deleteTest, saving, error };
+  const regenerateSlug = async (testId: string) => {
+    return await apiFetch(`/tests/${testId}/regenerate-slug`, {
+      method: "POST",
+    });
+  };
+
+  const toggleActive = async (testId: string) => {
+    return await apiFetch(`/tests/${testId}/toggle-active`, {
+      method: "PATCH",
+    });
+  };
+
+  return {
+    saveTest,
+    fetchTests,
+    deleteTest,
+    regenerateSlug,
+    toggleActive,
+    saving,
+    error,
+  };
 }
