@@ -26,6 +26,8 @@ frontend/out/
 frontend/build/
 frontend/.vercel
 frontend/.turbo
+frontend/*.tsbuildinfo
+
 
 # IDE Configs
 .vscode/
